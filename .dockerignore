@@ -1,0 +1,7 @@
+node_modules
+videos
+.env
+.gitignore
+.prettierrc
+Dockerfile
+README.md
