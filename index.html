@@ -71,7 +71,7 @@
             elemVideos.addEventListener("click", (e) => {
                 const filename = e.target.childNodes[0].textContent;
                 const player = (document.getElementById("player").innerHTML = `
-          <video id="videoPlayer" width="100%" controls autoplay muted="false">
+          <video id="videoPlayer" width="100%" controls autoplay muted playsinline preload="metadata">
             <source id="videoSource" src="/video/${filename}" type="video/mp4" />
           </video>`);
             });

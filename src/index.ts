@@ -74,8 +74,19 @@ app.get("/video/:file", async (req, res) => {
 
     const videoPath = join(DATADIR, req.params.file);
     const videoSize = (await fs.stat(videoPath)).size;
-    const start = Number(range.replace(/\D/g, ""));
-    const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+    if ("bytes=0-1" === range) {
+        var start = 0;
+        var end = 1;
+    }  else {
+        const matches = range.match(/bytes=(\d+)-(\d+)/);
+        if (matches) {
+            var start = Number.parseInt(matches[1]);
+            var end = Number.parseInt(matches[2]);
+        } else {
+            var start = Number(range.replace(/\D/g, ""));
+            var end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+        }
+    }
 
     // Create headers
     const contentLength = end - start + 1;
