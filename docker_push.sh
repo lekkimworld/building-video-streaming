@@ -1,2 +1,2 @@
 #!/bin/sh
-docker push lekkim/building-video-streaming
+docker push lekkim/building-video-streaming -a
