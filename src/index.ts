@@ -18,6 +18,7 @@ declare global {
             SESSION_SECRET: string;
             AUTH_SECRET: string;
             APP_GITCOMMIT: string;
+            REDIRECT_INSECURE: string;
         }
     }
 }
@@ -36,13 +37,15 @@ const DATADIR = process.env.VIDEO_PATH || "/data";
 console.log(`DATADIR <${DATADIR}>`);
 const AUTH_SECRET = process.env.AUTH_SECRET || uuid();
 console.log(`Using AUTH_SECRET=${AUTH_SECRET.substring(0, 3)}... (length: ${AUTH_SECRET.length})`);
+const REDIRECT_INSECURE = process.env.REDIRECT_INSECURE && (process.env.REDIRECT_INSECURE == "1" || process.env.REDIRECT_INSECURE.toLowerCase().substring(0,1) == 't') ? true : false;
+console.log(`REDIRECT_INSECURE <${REDIRECT_INSECURE}>`);
 
 // create app
 const app = express();
 app.disable("x-powered-by");
 app.use(bp_json());
 app.use((req, res, next) => {
-    if (process.env.NODE_ENV === "production" && !req.secure) {
+    if (process.env.NODE_ENV === "production" && !req.secure && process.env.REDIRECT_INSECURE) {
         const redirectUrl = `https://${req.headers.host}${req.originalUrl}`;
         console.log(`User is not using TLS - redirecting user to ${redirectUrl}`);
         res.redirect(redirectUrl);
