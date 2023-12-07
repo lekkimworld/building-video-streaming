@@ -45,7 +45,7 @@ const app = express();
 app.disable("x-powered-by");
 app.use(bp_json());
 app.use((req, res, next) => {
-    if (process.env.NODE_ENV === "production" && !req.secure && process.env.REDIRECT_INSECURE) {
+    if (process.env.NODE_ENV === "production" && !req.secure && REDIRECT_INSECURE) {
         const redirectUrl = `https://${req.headers.host}${req.originalUrl}`;
         console.log(`User is not using TLS - redirecting user to ${redirectUrl}`);
         res.redirect(redirectUrl);
