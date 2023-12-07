@@ -2,6 +2,7 @@ FROM node:18-alpine
 
 EXPOSE 8080
 ARG APP_GITCOMMIT
+ARG APP_VERSION
 ARG NODE_ENV
 ARG SESSION_SECRET
 ARG AUTH_SECRET
@@ -19,7 +20,7 @@ WORKDIR /usr/src/app
 # install app dependencies
 COPY package*.json ./
 RUN npm install
-RUN echo "APP_GITCOMMIT=${APP_GITCOMMIT}" > .env
+RUN echo "APP_GITCOMMIT=${APP_GITCOMMIT}\nAPP_VERSION=${APP_VERSION}" > .env
 
 # Bundle app source
 COPY . .

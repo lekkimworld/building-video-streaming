@@ -10,6 +10,7 @@ echo "Commit: $GITCOMMIT"
 
 docker build . \
     --build-arg APP_GITCOMMIT=$GITCOMMIT \
+    --build-arg APP_VERSION=$VERSION \
     --tag lekkim/building-video-streaming:latest \
     --tag lekkim/building-video-streaming:${VERSION_SPLIT[0]} \
     --tag lekkim/building-video-streaming:${VERSION_SPLIT[0]}.${VERSION_SPLIT[1]} \

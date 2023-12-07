@@ -18,6 +18,7 @@ declare global {
             SESSION_SECRET: string;
             AUTH_SECRET: string;
             APP_GITCOMMIT: string;
+            APP_VERSION: string;
             REDIRECT_INSECURE: string;
         }
     }
@@ -27,9 +28,9 @@ declare module "express-session" {
         isAuthentic: boolean;
     }
 }
-
+const APP_VERSION = process.env.APP_VERSION;
 const APP_GITCOMMIT=process.env.APP_GITCOMMIT;
-console.log(`App based on commit <${APP_GITCOMMIT}>`);
+console.log(`Starting app version <${APP_VERSION}> based on commit <${APP_GITCOMMIT}>`);
 const chunkExponent = process.env.CHUNK_EXPONENT ? Number.parseInt(process.env.CHUNK_EXPONENT) : 6;
 const CHUNK_SIZE = Math.pow(10, chunkExponent);
 console.log(`CHUNK_SIZE <${CHUNK_SIZE}> (10^${chunkExponent})`);
@@ -78,12 +79,13 @@ app.use((() => {
 })());
 
 /**
- * Commit
+ * Release info
  */
-app.get("/commit", (_req, res) => {
+app.get("/releaseinfo", (_req, res) => {
     res.type("json");
     res.send({
-        "commit": APP_GITCOMMIT
+        "commit": APP_GITCOMMIT,
+        "version": APP_VERSION
     })
 })
 
