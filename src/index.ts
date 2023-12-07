@@ -1,9 +1,12 @@
 import express from "express";
+import session, { MemoryStore, SessionOptions } from "express-session";
 import { join } from "path";
 import fs from "fs/promises";
 import {createReadStream} from "fs";
 import {config as dotenv_config} from "dotenv";
 import moment from "moment";
+import {v4 as uuid} from "uuid";
+import { json as bp_json } from "body-parser";
 dotenv_config();
 
 declare global {
@@ -11,19 +14,33 @@ declare global {
         export interface ProcessEnv {
             VIDEO_PATH: string;
             NODE_ENV: "development" | "production";
-            CHUNK_EXPONENT : string;
+            CHUNK_EXPONENT: string;
+            SESSION_SECRET: string;
+            AUTH_SECRET: string;
+            APP_GITCOMMIT: string;
         }
     }
 }
+declare module "express-session" {
+    export interface SessionData {
+        isAuthentic: boolean;
+    }
+}
 
+const APP_GITCOMMIT=process.env.APP_GITCOMMIT;
+console.log(`App based on commit <${APP_GITCOMMIT}>`);
 const chunkExponent = process.env.CHUNK_EXPONENT ? Number.parseInt(process.env.CHUNK_EXPONENT) : 6;
 const CHUNK_SIZE = Math.pow(10, chunkExponent);
 console.log(`CHUNK_SIZE <${CHUNK_SIZE}> (10^${chunkExponent})`);
 const DATADIR = process.env.VIDEO_PATH || "/data";
 console.log(`DATADIR <${DATADIR}>`);
+const AUTH_SECRET = process.env.AUTH_SECRET || uuid();
+console.log(`Using AUTH_SECRET=${AUTH_SECRET.substring(0, 3)}... (length: ${AUTH_SECRET.length})`);
 
 // create app
 const app = express();
+app.disable("x-powered-by");
+app.use(bp_json());
 app.use((req, res, next) => {
     if (process.env.NODE_ENV === "production" && !req.secure) {
         const redirectUrl = `https://${req.headers.host}${req.originalUrl}`;
@@ -34,8 +51,78 @@ app.use((req, res, next) => {
     }
 })
 
+// configure session support
+app.use((() => {
+    // create session options
+    const sessionOptions: SessionOptions = {
+        saveUninitialized: false,
+        resave: false,
+        secret: process.env.SESSION_SECRET || uuid(),
+        store: new MemoryStore()
+    };
+
+    // should we ensure secure cookies?
+    if (process.env.NODE_ENV === "production") {
+        console.log("NODE_ENV set to 'production' - enforcing cookie settings");
+        sessionOptions.cookie = {
+            secure: true,
+        };
+        sessionOptions.proxy = true;
+    }
+
+    // create sessions
+    return session(sessionOptions);
+})());
+
+/**
+ * Commit
+ */
+app.get("/commit", (_req, res) => {
+    res.type("json");
+    res.send({
+        "commit": APP_GITCOMMIT
+    })
+})
+
+/**
+ * Logout
+ */
+app.get("/logout", async (req, res) => {
+    req.session.destroy(() => {
+        res.redirect("/");
+    });
+})
+
+/**
+ * Allow user to post authentication secret
+ */
+app.post("/auth", (req, res, next) => {
+    const body = req.body;
+    const secret = body.secret;
+    if (secret == AUTH_SECRET) {
+        // we consider the user authentic
+        req.session.isAuthentic = true;
+        req.session.save();
+        return res.status(200).end();
+    } else {
+        return res.status(401).end();
+    }
+})
+
+/**
+ * Look for a session - having a session means the user is authentic - otherwise 
+ * we send the user to authenticate.
+ */
+app.use((req, res, next) => {
+    if (!req.session || !req.session.isAuthentic) {
+        return res.status(401).sendFile(join(__dirname, "..", "views", "auth.html"));
+    } else {
+        return next();
+    }
+})
+
 app.get("/:strdate([0-9]{4}-[0-9]{2}-[0-9]{2})?", function (req, res) {
-    res.sendFile(join(__dirname, "..", "index.html"));
+    res.sendFile(join(__dirname, "..", "views", "index.html"));
 });
 
 app.get("/videos/:date", async (req, res) => {

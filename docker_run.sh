@@ -2,6 +2,6 @@
 docker run \
     --rm \
     -it \
-    -v /Users/mheisterberg/Programming/repos/unifi-snapshot/output:/data \
+    --env-file ./.env \
     -p 8080:8080 \
     lekkim/building-video-streaming  
