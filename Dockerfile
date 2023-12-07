@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:21-alpine
 
 EXPOSE 8080
 ARG APP_GITCOMMIT
@@ -20,7 +20,7 @@ WORKDIR /usr/src/app
 # install app dependencies
 COPY package*.json ./
 RUN npm install
-RUN echo "APP_GITCOMMIT=${APP_GITCOMMIT}\nAPP_VERSION=${APP_VERSION}" > .env
+RUN printf 'APP_GITCOMMIT=${APP_GITCOMMIT}\nAPP_VERSION=${APP_VERSION}\n' > .env
 
 # Bundle app source
 COPY . .
