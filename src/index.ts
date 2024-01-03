@@ -38,8 +38,14 @@ const DATADIR = process.env.VIDEO_PATH || "/data";
 console.log(`DATADIR <${DATADIR}>`);
 const AUTH_SECRET = process.env.AUTH_SECRET || uuid();
 console.log(`Using AUTH_SECRET=${AUTH_SECRET.substring(0, 3)}... (length: ${AUTH_SECRET.length})`);
+const SESSION_SECRET = process.env.SESSION_SECRET || uuid();
+console.log(`Using SESSION=${SESSION_SECRET.substring(0, 3)}... (length: ${SESSION_SECRET.length})`);
 const REDIRECT_INSECURE = process.env.REDIRECT_INSECURE && (process.env.REDIRECT_INSECURE == "1" || process.env.REDIRECT_INSECURE.toLowerCase().substring(0,1) == 't') ? true : false;
 console.log(`REDIRECT_INSECURE <${REDIRECT_INSECURE}>`);
+
+const ensureDateComponentLength = (val : number) : string => {
+    return val < 10 ? `0${val}` : `${val}`;
+}
 
 // create app
 const app = express();
@@ -61,7 +67,7 @@ app.use((() => {
     const sessionOptions: SessionOptions = {
         saveUninitialized: false,
         resave: false,
-        secret: process.env.SESSION_SECRET || uuid(),
+        secret: SESSION_SECRET,
         store: new MemoryStore()
     };
 
@@ -136,12 +142,12 @@ app.get("/videos/:date", async (req, res) => {
 
     // parse and adjust to monday
     let m = moment(`${strdate}T00:00:00`, "YYYY-MM-DD[T]HH:mm:ss");
-    const dateStrDay = `${m.year()}${m.month() + 1}${m.date() < 10 ? "0" + m.date() : m.date()}`;
-    const dateStrMonth = `${m.year()}${m.month() + 1}`;
+    const dateStrDay = `${m.year()}${ensureDateComponentLength(m.month() + 1)}${ensureDateComponentLength(m.date())}`;
+    const dateStrMonth = `${m.year()}${ensureDateComponentLength(m.month() + 1)}`;
     while (m.day() !== 1) {
         m = m.subtract(1, "days");
     }
-    const dateStrWeekStart = `${m.year()}${m.month()+1}${m.date() < 10 ? "0" + m.date() : m.date()}`;
+    const dateStrWeekStart = `${m.year()}${ensureDateComponentLength(m.month() + 1)}${ensureDateComponentLength(m.date())}`;
 
     // filter files
     const files = (await fs.readdir(DATADIR)).filter((file) => {
