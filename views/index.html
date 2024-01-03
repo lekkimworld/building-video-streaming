@@ -96,7 +96,7 @@
             // listen for date selects
             document.getElementById("dateselect").addEventListener("change", async (ev) => {
                 const date = ev.target.valueAsDate;
-                const strdate = `${date.getFullYear()}-${date.getMonth() + 1}-${
+                const strdate = `${date.getFullYear()}-${date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1}-${
                     date.getDate() < 10 ? "0" + date.getDate() : date.getDate()
                 }`;
                 document.location.href = `/${strdate}`;
