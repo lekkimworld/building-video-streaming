@@ -52,8 +52,8 @@
                 </div>
                 <div class="col-xl-4 col-l-4 col-md-12">
                     <p>
-                        Vælg en dato for at vise videoer. Første video er dannet 
-                        for 6. november 2023. Vælges en dato vises de videoer og billeder, 
+                        Vælg en dato for at vise videoer og billeder. Første billede og video er  
+                        fra 6. november 2023. Vælges en dato vises de videoer og billeder, 
                         der er tilgængelig som links herunder og passer til datoen. Klik på 
                         link for hhv. video eller billede for at se video eller billede.
                     </p>
@@ -101,6 +101,9 @@
                 <source id="videoSource" src="/video/${filename}" type="video/mp4" />
             </video>`;
                 }
+
+                // scroll to top
+                window.scrollTo(0,0);
             });
 
             const loadContentForDate = async (strdate) => {
