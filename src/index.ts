@@ -34,8 +34,10 @@ console.log(`Starting app version <${APP_VERSION}> based on commit <${APP_GITCOM
 const chunkExponent = process.env.CHUNK_EXPONENT ? Number.parseInt(process.env.CHUNK_EXPONENT) : 6;
 const CHUNK_SIZE = Math.pow(10, chunkExponent);
 console.log(`CHUNK_SIZE <${CHUNK_SIZE}> (10^${chunkExponent})`);
-const DATADIR = process.env.VIDEO_PATH || "/data";
-console.log(`DATADIR <${DATADIR}>`);
+const VIDEO_DIR = process.env.VIDEO_PATH || "/videos";
+console.log(`VIDEO_DIR <${VIDEO_DIR}>`);
+const PICTURES_DIR = process.env.PICTURE_PATH || "/pictures";
+console.log(`PICTURES_DIR <${PICTURES_DIR}>`);
 const AUTH_SECRET = process.env.AUTH_SECRET || uuid();
 console.log(`Using AUTH_SECRET=${AUTH_SECRET.substring(0, 3)}... (length: ${AUTH_SECRET.length})`);
 const SESSION_SECRET = process.env.SESSION_SECRET || uuid();
@@ -132,8 +134,45 @@ app.use((req, res, next) => {
     }
 })
 
+app.get("/moment.js", (_req, res) => {
+    res.sendFile(join(__dirname, "..", "views", "moment-with-locales-2.30.1.js"));
+})
+app.get("/moment-timezone.js", (_req, res) => {
+    res.sendFile(join(__dirname, "..", "views", "moment-timezone.js"));
+});
+
 app.get("/:strdate([0-9]{4}-[0-9]{2}-[0-9]{2})?", function (req, res) {
     res.sendFile(join(__dirname, "..", "views", "index.html"));
+});
+
+app.get("/pictures/:date", async (req, res) => {
+    // get date as string
+    const strdate = req.params.date;
+    if (!strdate) return res.status(417);
+
+    // filter files
+    const files = (await fs.readdir(PICTURES_DIR))
+        .filter((file) => {
+            return file.toLowerCase().endsWith(".jpg");
+        })
+        .filter((file) => {
+            return file.indexOf(`snapshot_${strdate.replace(/-/g, "")}`) === 0;
+        });
+
+    // send to caller
+    res.type("json").send({
+        files
+    });
+})
+
+app.get("/picture/:file", async (req, res) => {
+    const picturePath = join(PICTURES_DIR, req.params.file);
+    const pictureSize = (await fs.stat(picturePath)).size;
+    
+    // create read stream
+    const stream = createReadStream(picturePath, {start: 0, end: pictureSize});
+    res.type("image/jpg");
+    stream.pipe(res);
 });
 
 app.get("/videos/:date", async (req, res) => {
@@ -150,15 +189,14 @@ app.get("/videos/:date", async (req, res) => {
     const dateStrWeekStart = `${m.year()}${ensureDateComponentLength(m.month() + 1)}${ensureDateComponentLength(m.date())}`;
 
     // filter files
-    const files = (await fs.readdir(DATADIR)).filter((file) => {
+    const files = (await fs.readdir(VIDEO_DIR)).filter((file) => {
         return file.toLowerCase().endsWith(".mp4");
     }).filter(file => {
         return file === `timelapse-day-${dateStrDay}.mp4` || file.startsWith(`timelapse-week-${dateStrWeekStart}`) || file.startsWith(`timelapse-month-${dateStrMonth}`);
     });
 
     // send response
-    res.type("json");
-    res.send({
+    res.type("json").send({
         files,
     });
 });
@@ -170,7 +208,7 @@ app.get("/video/:file", async (req, res) => {
         res.status(400).send("Requires Range header");
     }
 
-    const videoPath = join(DATADIR, req.params.file);
+    const videoPath = join(VIDEO_DIR, req.params.file);
     const videoSize = (await fs.stat(videoPath)).size;
     if ("bytes=0-1" === range) {
         var start = 0;

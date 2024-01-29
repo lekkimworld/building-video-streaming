@@ -11,6 +11,8 @@
             crossorigin="anonymous"
         />
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/moment.js"></script>
+        <script src="/moment-timezone.js"></script>
         <title>Byggepladsvideoer</title>
         <style>
             #player {
@@ -24,6 +26,10 @@
                 text-decoration: underline;
                 cursor: pointer;
                 margin-bottom: 5px;
+            }
+            .hide {
+                display: none;
+                visibility: hidden;
             }
         </style>
     </head>
@@ -40,20 +46,20 @@
                 </div>
             </div>
             <div class="row gy-4 gx-4">
-                <div class="col-xl-12 col-md-12">
-                    <div id="player"></div>
+                <div class="col-xl-8 col-l-8 col-md-12">
+                    <div id="player" class="hide"></div>
+                    <img src="" id="pictureframe" class="hide" style="width: 100%">
                 </div>
-                <div class="col-xl-12 col-md-12">
+                <div class="col-xl-4 col-l-4 col-md-12">
                     <p>
                         Vælg en dato for at vise videoer. Første video er dannet 
-                        for 6. november 2023. Vælges en dato vises de videoer, der 
-                        er tilgængelig som links herunder og passer til datoen 
-                        hhv. dags-, uge- og månedsvideoer. Klik på datoen for at 
-                        vise videoen herover.
+                        for 6. november 2023. Vælges en dato vises de videoer og billeder, 
+                        der er tilgængelig som links herunder og passer til datoen. Klik på 
+                        link for hhv. video eller billede for at se video eller billede.
                     </p>
                     <label for="dateselect">Date:</label>
                     <input type="date" id="dateselect" name="dateselect" class="mb-4" />
-                    <div id="videos"></div>
+                    <div id="media"></div>
                 </div>
             </div>
         </div>
@@ -72,25 +78,62 @@
             document.getElementById("dateselect").setAttribute("value", strdate);
 
             // click handler for videos
-            const elemVideos = document.getElementById("videos");
-            elemVideos.addEventListener("click", (e) => {
-                const filename = e.target.childNodes[0].textContent;
-                const player = (document.getElementById("player").innerHTML = `
-          <video id="videoPlayer" width="100%" controls autoplay muted playsinline preload="metadata">
-            <source id="videoSource" src="/video/${filename}" type="video/mp4" />
-          </video>`);
+            const elemMedia = document.getElementById("media");
+            elemMedia.addEventListener("click", (e) => {
+                const clickElem = e.target.childNodes[0];
+                const clickText = clickElem.textContent;
+                const filename = clickText.indexOf(".mp4") > 0 ? clickText : clickElem.parentNode.getAttribute("rel");
+
+                const elemPictureFrame = document.getElementById("pictureframe");
+                const elemPlayer = document.getElementById("player");
+
+                if (filename.indexOf(".jpg") > 0) {
+                    // picture
+                    elemPictureFrame.classList.remove("hide");
+                    elemPlayer.classList.add("hide");
+                    elemPictureFrame.src = `/picture/${filename}`;
+                } else {
+                    // video
+                    elemPictureFrame.classList.add("hide");
+                    elemPlayer.classList.remove("hide");
+                    const player = elemPlayer.innerHTML = `
+            <video id="videoPlayer" width="100%" controls autoplay muted playsinline preload="metadata">
+                <source id="videoSource" src="/video/${filename}" type="video/mp4" />
+            </video>`;
+                }
             });
+
+            const loadContentForDate = async (strdate) => {
+                const elem = document.getElementById("media");
+                const videos = await loadVideosForDate(strdate);
+                const pictures = await loadPicturesForDate(strdate);
+                if (!(videos.length + pictures.length)) {
+                    return elem.innerHTML = "Ingen filer fundet for dato.";
+                }
+
+                let content = "<ul>";
+                for (let i=0; i<videos.length; i++) content += `<li>${videos[i]}</li>`
+                for (let i=0; i<pictures.length; i++) {
+                    const displaydt = moment.utc(pictures[i].substring(9, 24), "YYYYMMDD-HHmmss").tz("Europe/Copenhagen").format("DD/MM-YYYY HH:mm");
+                    content += `<li rel="${pictures[i]}">${displaydt}</li>`
+                }
+                content += "</ul>";
+                elem.innerHTML = content;
+            }
 
             const loadVideosForDate = async (strdate) => {
                 console.log(`Loading videos for <${strdate}>`);
                 const res = await fetch(`/videos/${strdate}`);
                 const body = await res.json();
-                const elem = document.getElementById("videos");
-                if (body.files.length) {
-                    elem.innerHTML = `<ul><li>${body.files.join("</li><li>")}</li></ul>`;
-                } else {
-                    elem.innerHTML = "No matching files found";
-                }
+                return body.files || [];
+                
+            };
+
+            const loadPicturesForDate = async (strdate) => {
+                console.log(`Loading pictures for <${strdate}>`);
+                const res = await fetch(`/pictures/${strdate}`);
+                const body = await res.json();
+                return body.files || [];
             };
 
             // listen for date selects
@@ -103,7 +146,7 @@
             });
 
             // load videos
-            loadVideosForDate(strdate);
+            loadContentForDate(strdate);
         </script>
     </body>
 </html>
