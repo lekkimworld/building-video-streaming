@@ -65,6 +65,10 @@
         </div>
 
         <script>
+            const ensureDateComponentLength = (val) => {
+                return val < 10 ? `0${val}` : `${val}`;
+            }
+
             // get date from url or set to current date
             const path = document.location.pathname;
             let strdate;
@@ -73,8 +77,8 @@
                 strdate = `${strdate.substring(0, 4)}-${strdate.substring(5, 7)}-${strdate.substring(8, 10)}`;
             } else {
                 const d = new Date();
+                strdate = `${d.getFullYear()}-${ensureDateComponentLength(d.getMonth() +1)}-${ensureDateComponentLength(d.getDate())}`;
             }
-            strdate = `${d.getFullYear()}-${d.getMonth() + 1 < 10 ? `0${d.getMonth() + 1}` : d.getMonth() + 1}-${d.getDate()}`;
             document.getElementById("dateselect").setAttribute("value", strdate);
 
             // click handler for videos
